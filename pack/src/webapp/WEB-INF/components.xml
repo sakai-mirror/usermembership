@@ -10,4 +10,17 @@
 		<property name="securityService" ref="org.sakaiproject.authz.api.SecurityService"/>
 	</bean>
 	
+	<!-- Default UserDirectorySearch implementation -->	
+	<!--
+		Institutions should provide their own implementation of this interface 
+		in their UserDirectoryProvider to have better performance in 
+		UserMembership external user searches.<br>
+		This default implementation will be used if no such implementation found.<br>
+		<br>
+		For LDAP implementations, filtering information can be found at http://java.sun.com/products/jndi/tutorial/basics/directory/filter.html
+	-->
+	<bean id="org.sakaiproject.umem.api.UserDirectorySearch"
+		class="org.sakaiproject.umem.impl.DefaultUserDirectorySearchImpl"
+		singleton="true">
+	</bean>
 </beans>

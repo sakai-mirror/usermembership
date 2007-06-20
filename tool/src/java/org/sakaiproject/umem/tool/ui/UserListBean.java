@@ -30,6 +30,7 @@ import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
@@ -45,8 +46,12 @@ import org.sakaiproject.component.cover.ComponentManager;
 import org.sakaiproject.db.api.SqlService;
 import org.sakaiproject.tool.api.ToolManager;
 import org.sakaiproject.umem.api.Authz;
+import org.sakaiproject.umem.api.UserDirectorySearch;
+import org.sakaiproject.user.api.DisplayAdvisorUDP;
 import org.sakaiproject.user.api.User;
+import org.sakaiproject.user.api.UserDirectoryProvider;
 import org.sakaiproject.user.api.UserDirectoryService;
+import org.sakaiproject.user.api.UserNotDefinedException;
 import org.sakaiproject.util.ResourceLoader;
 
 
@@ -102,10 +107,29 @@ public class UserListBean {
 	// system
 	/** Sakai services vars */
 	private transient UserDirectoryService	M_uds				= (UserDirectoryService) ComponentManager.get(UserDirectoryService.class.getName());
+	private transient UserDirectoryProvider	M_udp				= null;
 	private transient ToolManager			M_tm				= (ToolManager) ComponentManager.get(ToolManager.class.getName());
 	private transient SqlService			M_sql				= (SqlService) ComponentManager.get(SqlService.class.getName());
 	private transient Authz					authz				= (Authz) ComponentManager.get(Authz.class.getName());
+	private transient UserDirectorySearch	udSearch			= null;
 	
+	
+	public UserListBean() {
+		if(udSearch == null){
+			try{
+				M_udp = (UserDirectoryProvider) ComponentManager.get(UserDirectoryProvider.class.getName());
+			}catch(Exception e){
+				M_udp = null;
+			}			
+			if(M_udp != null && M_udp instanceof UserDirectorySearch){
+				udSearch = (UserDirectorySearch) M_udp;
+				LOG.info("Using UserDirectorySearch implementation found on UserDirectoryProvider: "+udSearch.getClass().getName());
+			}else{
+				udSearch = (UserDirectorySearch) ComponentManager.get(UserDirectorySearch.class.getName()); 
+				LOG.info("No UserDirectorySearch implementation found on UserDirectoryProvider. Using default implementation: "+udSearch.getClass().getName());
+			}			
+		}		
+	}
 	
 	// ######################################################################################
 	// UserRow, UserSitesRow CLASS
@@ -175,6 +199,14 @@ public class UserListBean {
 		public UserRow getUserRow() {
 			return this;
 		}
+
+		public boolean equals(Object obj) {
+			if(obj instanceof UserRow){
+				UserRow o = (UserRow) obj;
+				return o.getUserID().equals(getUserID());
+			}
+			return false;
+		}
 	}
 
 	public static final Comparator getUserRowComparator(final String fieldName, final boolean sortAscending, final Collator collator) {
@@ -236,7 +268,19 @@ public class UserListBean {
 			renderClearSearch = true;
 		
 		if(isAllowed() && renderTable && refreshQuery){
+			LOG.info("-------------  NEW SEARCH  -------------");
+			// classic search impl
+			long startMs = (new Date()).getTime();
 			doSearch();
+			long endMs = (new Date()).getTime();
+			LOG.info("[Classic] doSearch() implementation took "+(endMs-startMs)+" ms  and returned "+userRows.size()+" users.");
+
+			// new search impl
+			long startMs2 = (new Date()).getTime();
+			doSearchNew();
+			long endMs2 = (new Date()).getTime();
+			LOG.info("[New] doSearchNew() implementation took "+(endMs2-startMs2)+" ms  and returned "+userRows.size()+" users.");
+			
 			refreshQuery = false;
 		}
 		
@@ -246,6 +290,105 @@ public class UserListBean {
 		}
 		
 		return "";
+	}
+	
+	private void doSearchNew(){
+		// prepare search params
+		selectedUserType = newUserType;
+		selectedAuthority = newAuthority;
+		searchKeyword = searchKeyword.trim();
+		boolean filtering = (selectedUserType != null && userTypes != null && !selectedUserType.equals(USER_TYPE_ALL));
+		boolean searching = (searchKeyword != null && !searchKeyword.equals("") && !searchKeyword.equals(msgs.getString("bar_input_search_inst")) );
+		
+		String userType = filtering? (selectedUserType.equals(USER_TYPE_NONE)? "" : selectedUserType) : null;
+		String criteria = searching? searchKeyword : null;
+
+		//LOG.info("[New] doSearchNew(): criteria=|"+criteria+"|, userType=|"+userType+"|");
+		
+		// reset user list
+		userRows = new ArrayList();
+
+		// internal users
+		List internal = new ArrayList();
+		if(selectedAuthority.equals(USER_AUTH_ALL) || selectedAuthority.equals(USER_AUTH_INTERNAL)){
+			long startMs = (new Date()).getTime();
+			internal = doSearchInInternalProvider(criteria, userType);
+			long endMs = (new Date()).getTime();
+			LOG.info("[New] doSearchInInternalProvider() took "+(endMs-startMs)+" ms  and returned "+internal.size()+" users.");
+		}
+		userRows.addAll(internal);
+		
+		// external users
+		List external = new ArrayList();
+		if(selectedAuthority.equals(USER_AUTH_ALL) || selectedAuthority.equals(USER_AUTH_EXTERNAL)){
+			long startMs = (new Date()).getTime();
+			external = doSearchInExternalProvider(internal, criteria, userType);
+			long endMs = (new Date()).getTime();
+			LOG.info("[New] doSearchInExternalProvider() took "+(endMs-startMs)+" ms  and returned "+external.size()+" users.");
+		}
+		userRows.addAll(external);
+		
+		// update pager
+		this.totalItems = userRows.size();
+		if(totalItems > 0) 
+			renderPager = true;
+		else
+			renderPager = false;
+		firstItem = 0;
+	}
+	
+	private List doSearchInInternalProvider(String criteria, String userType) {
+		List unfilteredUsers = new ArrayList();
+		if(criteria != null)
+			unfilteredUsers = M_uds.searchUsers(criteria, -1, -1);
+		else
+			unfilteredUsers = M_uds.getUsers();
+		List users = new ArrayList();
+		Iterator i = unfilteredUsers.iterator();
+		while (i.hasNext()){
+			User u = (User) i.next();
+			if(userType == null 
+					|| (userType.equals("") && (u.getType() == null || u.getType().equals("")) )
+					|| (userType.equals(u.getType()))
+				){
+                // For internal users, making the assumption that eid will do for displayId
+                String eid = u.getEid();
+				users.add(new UserRow(u.getId(), eid, eid, u.getDisplayName(), u.getEmail(), u.getType(), USER_AUTH_INTERNAL));
+			}
+		}
+		if(userType != null && !userType.equals(""))
+			addExtraUserType(userType);
+		return users;
+	}
+	
+	private List doSearchInExternalProvider(List internal, String criteria, String userType) {
+		List unfilteredUsers = udSearch.searchUsers(criteria, userType);
+		List users = new ArrayList();
+		Iterator i = unfilteredUsers.iterator();
+		while (i.hasNext()){
+			User u = (User) i.next();
+			UserRow userRow = null;
+			try{
+				String eid = u.getEid();
+				if(eid != null){
+					String displayName;
+					if(M_udp != null && M_udp instanceof DisplayAdvisorUDP){
+						displayName = ((DisplayAdvisorUDP) M_udp).getDisplayName(u);
+					}else
+						displayName = u.getDisplayName();
+                    String dispId = u.getDisplayId();
+					userRow = new UserRow(M_uds.getUserId(eid), eid, dispId, displayName, u.getEmail(), u.getType() != null? u.getType() : "", USER_AUTH_EXTERNAL);
+					if(userType != null && !userType.equals(""))
+						addExtraUserType(u.getType());
+					if(!internal.contains(userRow)){
+						users.add(userRow);
+					}
+				}
+			}catch(UserNotDefinedException e){
+				LOG.info("User never logged in - ignoring: "+u.getEid());
+			}			
+		}
+		return users;
 	}
 
 	private void doSearch() {

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+	<pomVersion>3</pomVersion>	
+	<extend>../../master/project.xml</extend>
+	<name>sakai-usermembership-util</name>
+	<groupId>sakaiproject</groupId>
+	<id>sakai-usermembership-util</id>
+	<currentVersion>${sakai.version}</currentVersion>
+	<organization>
+		<name>Universidade Fernando Pessoa</name>
+		<url>http://www.ufp.pt</url>
+	</organization>
+	<inceptionYear>2006</inceptionYear>
+
+	<properties>
+		<!-- deploy as a jar -->
+		<deploy.type>jar</deploy.type>
+	</properties>
+	
+	<dependencies>
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-entity-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-user-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-util-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+        
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.0.4</version>
+			<properties>
+				<war.bundle>true</war.bundle>
+			</properties>        
+		</dependency>
+
+	</dependencies>
+
+	<build>
+		<!-- java source -->
+		<sourceDirectory>src/java</sourceDirectory>
+
+		<!-- other resources for the jar - the message bundles -->
+		<resources>
+			<resource>
+				<directory>${basedir}/src/bundle</directory>
+				<includes>
+					<include>**/*.properties</include>
+				</includes>
+			</resource>
+		</resources>	
+	</build>
+
+</project>
+
+

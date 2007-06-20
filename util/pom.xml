@@ -19,30 +19,42 @@ limitations under the License.
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <artifactId>base</artifactId>
+    <artifactId>sakai-usermembership-base</artifactId>
     <groupId>org.sakaiproject</groupId>
     <version>M2</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <name>sakai-usermembership-util</name>
   <groupId>org.sakaiproject</groupId>
-  <artifactId>sakai-usermembership-base</artifactId>
-  <name>Sakai User Membership  Project</name>
-
-  <scm>
-    <connection>scm:svn:https://source.sakaiproject.org/svn/usermembership/trunk</connection>
-    <developerConnection>scm:svn:https://source.sakaiproject.org/svn/usermembership/trunk</developerConnection>
-    <url>https://source.sakaiproject.org/svn/usermembership/trunk</url>
-  </scm>
-
-  <packaging>pom</packaging>
-  <modules>
-    <module>api</module>
-    <module>help</module>
-    <module>impl</module>
-    <module>pack</module>
-    <module>tool</module>
-    <module>util</module>
-  </modules>
+  <artifactId>sakai-usermembership-util</artifactId>
+  <description>
+    This project creates a JAR containing the usermembership Util classes for Sakai.
+  </description>
+  <packaging>jar</packaging>
+  <dependencies>  		
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-entity-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-user-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+        <dependency>
+			<groupId>sakaiproject</groupId>
+			<artifactId>sakai-util-api</artifactId>
+			<version>${sakai.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.0.4</version>
+		</dependency>
+    </dependencies>
 </project>
