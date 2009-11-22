@@ -2,11 +2,6 @@
   <name>sakai-usermembership-tool</name>
   <comment>This project creates a WAR containing the usermembership Tool for Sakai.</comment>
   <projects>
-    <project>sakai-depend-jsf-widgets-myfaces</project>
-    <project>sakai-jsf-app</project>
-    <project>sakai-jsf-tool</project>
-    <project>sakai-jsf-widgets</project>
-    <project>sakai-jsf-widgets-myfaces</project>
     <project>sakai-usermembership-api</project>
   </projects>
   <buildSpec>
