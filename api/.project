@@ -1,0 +1,17 @@
+<projectDescription>
+  <name>sakai-usermembership-api</name>
+  <comment>This project creates the general APIs used by the Sakai User Membership Tool</comment>
+  <projects>
+    <project>sakai-site-api</project>
+    <project>sakai-tool-api</project>
+    <project>sakai-util-api</project>
+  </projects>
+  <buildSpec>
+    <buildCommand>
+      <name>org.eclipse.jdt.core.javabuilder</name>
+    </buildCommand>
+  </buildSpec>
+  <natures>
+    <nature>org.eclipse.jdt.core.javanature</nature>
+  </natures>
+</projectDescription>
