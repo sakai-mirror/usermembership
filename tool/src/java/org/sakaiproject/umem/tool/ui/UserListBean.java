@@ -450,7 +450,7 @@ public class UserListBean {
 					if(filtering && !searching){
 						if((!selectedUserType.equals(USER_TYPE_NONE) && t.equals(selectedUserType)) || (selectedUserType.equals(USER_TYPE_NONE) && "".equals(t))) add = true;
 					}else if(!filtering && searching){
-						if(n.toLowerCase().matches(regexp) || e.toLowerCase().matches(regexp) || id.toLowerCase().matches(regexp)) add = true;
+						if(n.toLowerCase().matches(regexp) || e.toLowerCase().matches(regexp) || id.toLowerCase().matches(regexp) || eid.toLowerCase().matches(regexp)) add = true;
 					}else if(filtering && searching){
 						if((!selectedUserType.equals(USER_TYPE_NONE) && t.equals(selectedUserType)) || (selectedUserType.equals(USER_TYPE_NONE) && "".equals(t))){
 							if(n.toLowerCase().matches(regexp) || e.toLowerCase().matches(regexp) || id.toLowerCase().matches(regexp)) add = true;
