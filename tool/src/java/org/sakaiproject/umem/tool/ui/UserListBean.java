@@ -23,6 +23,7 @@ package org.sakaiproject.umem.tool.ui;
 
 import java.io.Serializable;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -273,21 +274,32 @@ public class UserListBean {
 				if(searching || filtering){
 					sql += " WHERE ";
 					if(searching)
-						sql += " (EID LIKE '%"+searchKeyword+"%' OR SAKAI_USER.USER_ID LIKE '%"+searchKeyword+"%' OR FIRST_NAME LIKE '%"+searchKeyword+"%' OR LAST_NAME LIKE '%"+searchKeyword+"%' OR EMAIL LIKE '%"+searchKeyword+"%') ";
+						sql += " (EID LIKE ? OR SAKAI_USER.USER_ID LIKE ? OR FIRST_NAME LIKE ? OR LAST_NAME LIKE ? OR EMAIL LIKE ?) ";
 					if(filtering && searching)
 						sql += " AND ";
 					if(filtering){
 						if(selectedUserType.equals(USER_TYPE_NONE))
 							sql += " (TYPE='' or TYPE IS NULL) ";
 						else
-							sql += " (TYPE='"+selectedUserType+"') ";
+							sql += " (TYPE=?) ";
 					}
 				}		
 				
 				try{
 					Connection c = M_sql.borrowConnection();
-					Statement st = c.createStatement();
-					ResultSet rs = st.executeQuery(sql);
+					PreparedStatement pst = c.prepareStatement(sql);
+					if(searching || filtering){
+						int i = 1;
+						if(searching) {
+							for(i=1; i<=5; i++) {
+								pst.setString(i, "%"+searchKeyword+"%");
+							}
+						}
+						if(filtering && !selectedUserType.equals(USER_TYPE_NONE)) {
+							pst.setString(i++, selectedUserType);
+						}
+					}
+					ResultSet rs = pst.executeQuery();
 					while (rs.next()){
 						String id = rs.getString("USER_ID");
 						String eid = rs.getString("EID");
@@ -300,7 +312,7 @@ public class UserListBean {
 						userRows.add(new UserRow(id, eid, eid, getFullName(f, l), e, t, USER_AUTH_INTERNAL));
 					}
 					rs.close();
-					st.close();
+					pst.close();
 					M_sql.returnConnection(c);
 				}catch(SQLException e){
 					LOG.error("SQL error occurred while retrieving list of internal users: "+e.getMessage());
